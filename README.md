@@ -1,39 +1,57 @@
-BitLocker Encryption Status Checker
+Two PowerShell scripts, to check disk encryption on Windows and macOS. Mainly for remote checks with CrowdStrike Real-Time Response (RTR), especially if laptops are lost or stolen.
 
-This PowerShell script checks if BitLocker is enabled on all available drives, including USB drives, on a Windows computer. It's useful for remote checks using CrowdStrike Real-Time Response (RTR), especially if a laptop is reported missing.
+Scripts
 
-Other Simple Command for Bitlocker check (gives version of bde Bitlocker Drive Encryption, more info if admin):
+1. BitLocker Status Checker (Windows Only)
 
-manage-bde -status
+This script specifically checks if BitLocker encryption is enabled on Windows computers.
 
-CrowdStrike RCE PowerShell Check (No admin needed):
+Uses built-in Windows metadata (System.Volume.BitLockerProtection).
 
-try {
-    $shell = New-Object -ComObject Shell.Application
-    $drives = Get-PSDrive -PSProvider FileSystem
-        foreach ($drive in $drives) {
-        $path = $drive.Root
-        $bitlockerStatus = $shell.NameSpace($path).Self.ExtendedProperty('System.Volume.BitLockerProtection')
-        $statusDescription = switch ($bitlockerStatus) {
-            0 { "Unencryptable" }
-            1 { "Encrypted" }
-            2 { "Not Encrypted" }
-            3 { "Encrypting" }
-            4 { "Encryption Paused" }
-            5 { "Decryption in Progress" }
-            default { "Unknown Status ($bitlockerStatus)" }
-        }
-        Write-Output "$path BitLocker: $statusDescription"
-      }
-} catch {
-    Write-Output "Error retrieving BitLocker status: $_"
-}
+No admin privileges needed.
 
-How It Works
-The script checks each file system drive available and reports whether BitLocker encryption is enabled, disabled, in progress, or paused. 
-Through the Shell COM object. BitLocker gives predefined numbers that represent encryption statuses, like encrypted, or encrypting.
-The script then matches the numbers to descriptions using a switch statement, for a more readable status for each drive.
+Returns statuses like Encrypted, Not Encrypted, Encrypting, etc.
+
+2. Windows and MacOS Encryption Status Checker
+
+This script checks if built in or third-party encryption (BitLocker, FileVault, VeraCrypt) is used on either Windows or macOS.
+
+Checks Performed:
+
+Windows:
+
+BitLocker using the Get-BitLockerVolume cmdlet or fallback to manage-bde -status.
+
+Detects VeraCrypt by checking if the VeraCrypt process (veracrypt.exe) is running.
+
+macOS:
+
+FileVault encryption status via the fdesetup status command.
+
+Detects VeraCrypt by checking if a VeraCrypt process is running.
+
+How the Scripts Work
+
+Both scripts detect encryption differently:
+
+BitLocker Status Checker: Directly queries Windows system properties (System.Volume.BitLockerProtection) to report the BitLocker status on all drives.
+
+Windows and MacOS Encryption Checker: First identifies the operating system:
+Then try's the built in BitLocker cmdlet (Get-BitLockerVolume). If unavailable, it parses plaintext output from the manage-bde -status command to look through encryption details.
+
+macOS: It runs the built-in command fdesetup status to check if FileVault is active.
+
+VeraCrypt Detection: On both systems, it checks if the VeraCrypt process is actively running, VeraCrypt being open-source encryption.
+
+BitLocker Status Checker Output
+-BitLocker Status Checker: Reports only BitLocker encryption status per volume.
+
+Windows and MacOS Encryption Checker Output:
+-Volume (Drive letter or mount point).
+-Protection Status (Encrypted, Not Encrypted, Container Mounted, etc).
+-Encryption Method (specific method such as AES, XtsAes128 when available; otherwise, indicates the encryption vendor).
+-Vendor (Microsoft BitLocker, Apple FileVault, VeraCrypt).
 
 Limitations
--Only checks for BitLocker encryption.
--Works on Windows OS only.
+-BitLocker Status Checker: Only works on Windows.
+-Cross-Platform Checker: Supports Windows and macOS.
