@@ -12,7 +12,7 @@ No admin privileges needed.
 
 Returns statuses like Encrypted, Not Encrypted, Encrypting, etc.
 
-2. Extended Encryption Status Checker
+2. Extended Encryption Checker
 
 This script checks if built in or third-party encryption (BitLocker, FileVault, VeraCrypt) is used on either Windows or macOS.
 
@@ -34,7 +34,7 @@ How the Scripts Work
 
 Both scripts detect encryption differently:
 
-BitLocker Status Checker: Directly queries Windows system properties (System.Volume.BitLockerProtection) to report the BitLocker status on all drives.
+BitLocker Checker: Directly queries Windows system properties (System.Volume.BitLockerProtection) to report the BitLocker status on all drives.
 
 Extended Encryption Checker: First identifies the operating system:
 Then try's the built in BitLocker cmdlet (Get-BitLockerVolume). If unavailable, it parses plaintext output from the manage-bde -status command to look through encryption details.
